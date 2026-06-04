@@ -1,0 +1,414 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ANALYST_MANAGER
+  VIEWER
+}
+
+enum ThreatLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum InterestLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CompetitorStatus {
+  ACTIVE
+  HOLD
+  WATCH
+  EXCLUDED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  role         UserRole @default(VIEWER)
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  researchQuestions ResearchQuestion[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Competitor {
+  id              String           @id @default(cuid())
+  name            String
+  serviceName     String
+  competitorType  String
+  marketArea      String
+  websiteUrl      String?
+  appAndroidUrl   String?
+  appIosUrl       String?
+  keywords        String[]         @default([])
+  description     String?          @db.Text
+  strengths       String?          @db.Text
+  weaknesses      String?          @db.Text
+  responseStrategy String?         @db.Text
+  threatLevel     ThreatLevel      @default(MEDIUM)
+  interestLevel   InterestLevel    @default(MEDIUM)
+  status          CompetitorStatus @default(ACTIVE)
+  internalMemo    String?          @db.Text
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([status])
+  @@index([name])
+  monitoredSources MonitoredSource[]
+  collectedItems CollectedItem[]
+  insights Insight[]
+  researchQuestions ResearchQuestion[]
+  procurementAwards ProcurementAward[]
+  procurementContracts ProcurementContract[]
+  ipRecords IpRecord[]
+
+  @@unique([name, serviceName])
+}
+
+enum SourceType {
+  OFFICIAL_HOMEPAGE
+  NOTICE
+  NEWS_SEARCH
+  APP_STORE
+  GOOGLE_PLAY
+  SCHOOL_NOTICE
+  OTHER
+}
+
+enum CollectFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  MANUAL
+}
+
+enum ImpactType {
+  OPPORTUNITY
+  THREAT
+  NEUTRAL
+  NEEDS_CHECK
+}
+
+enum InsightStatus {
+  NEEDS_REVIEW
+  REVIEWED
+  ARCHIVED
+}
+
+enum ApiIntegrationStatus {
+  NOT_CONNECTED
+  KEY_MISSING
+  TESTABLE
+  NORMAL
+  ERROR
+}
+
+model MonitoredSource {
+  id               String           @id @default(cuid())
+  competitorId     String
+  sourceType       SourceType
+  sourceName       String
+  sourceUrl        String
+  collectFrequency CollectFrequency @default(DAILY)
+  isActive         Boolean          @default(true)
+  lastCollectedAt  DateTime?
+  memo             String?          @db.Text
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  competitor    Competitor      @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  collectedItems CollectedItem[]
+
+  @@index([competitorId])
+  @@index([isActive])
+  @@unique([competitorId, sourceUrl])
+}
+
+model CollectedItem {
+  id           String    @id @default(cuid())
+  competitorId String?
+  sourceId     String?
+  title        String
+  originalText String?   @db.Text
+  summary      String?   @db.Text
+  sourceUrl    String
+  publishedAt  DateTime?
+  collectedAt  DateTime  @default(now())
+  contentHash  String
+  rawHtml      String?   @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  competitor Competitor?      @relation(fields: [competitorId], references: [id], onDelete: SetNull)
+  source     MonitoredSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  insights   Insight[]
+
+  @@unique([sourceUrl, contentHash])
+  @@index([collectedAt])
+}
+
+model Insight {
+  id                    String        @id @default(cuid())
+  collectedItemId        String?
+  competitorId           String?
+  category              String
+  impactType            ImpactType
+  importanceScore       Int
+  summary               String        @db.Text
+  tAnsimAnalysis        String?       @db.Text
+  recommendedAction     String?       @db.Text
+  additionalCheckNeeded String?       @db.Text
+  status                InsightStatus @default(NEEDS_REVIEW)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  collectedItem CollectedItem? @relation(fields: [collectedItemId], references: [id], onDelete: SetNull)
+  competitor    Competitor?    @relation(fields: [competitorId], references: [id], onDelete: SetNull)
+
+  @@index([impactType])
+  @@index([importanceScore])
+  @@index([status])
+}
+
+model ResearchQuestion {
+  id                  String      @id @default(cuid())
+  userId              String?
+  question            String      @db.Text
+  answer              String?     @db.Text
+  searchScope         String
+  dateRange           String
+  relatedCompetitorId String?
+  impactType          ImpactType?
+  importanceScore     Int?
+  sourceLinks         String[]    @default([])
+  savedToReport       Boolean     @default(false)
+  internalMemo        String?     @db.Text
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  relatedCompetitor Competitor? @relation(fields: [relatedCompetitorId], references: [id], onDelete: SetNull)
+}
+
+model DailyReport {
+  id                    String   @id @default(cuid())
+  reportDate            DateTime @unique
+  title                 String
+  executiveSummary      String?  @db.Text
+  competitorSummary     String?  @db.Text
+  policySummary         String?  @db.Text
+  procurementSummary    String?  @db.Text
+  appReviewSummary      String?  @db.Text
+  opportunitySummary    String?  @db.Text
+  threatSummary         String?  @db.Text
+  recommendedActions    String?  @db.Text
+  additionalCheckNeeded String?  @db.Text
+  sourceLinks           String[] @default([])
+  reportStatus          String   @default("DRAFT")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PublicApiSource {
+  id                  String               @id @default(cuid())
+  name                String
+  provider            String
+  apiType             String
+  baseUrl             String?
+  authType            String               @default("SERVICE_KEY")
+  envKeyName          String
+  collectionFrequency CollectFrequency     @default(DAILY)
+  status              ApiIntegrationStatus @default(NOT_CONNECTED)
+  isActive            Boolean              @default(false)
+  lastTestedAt        DateTime?
+  lastCollectedAt     DateTime?
+  lastErrorMessage    String?              @db.Text
+  internalMemo        String?              @db.Text
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  logs PublicApiCollectionLog[]
+
+  @@unique([name, provider])
+}
+
+model PublicApiCollectionLog {
+  id             String    @id @default(cuid())
+  apiSourceId    String
+  status         String
+  startedAt      DateTime
+  finishedAt     DateTime?
+  collectedCount Int       @default(0)
+  errorMessage   String?   @db.Text
+  rawLog         Json?
+  createdAt      DateTime  @default(now())
+
+  apiSource PublicApiSource @relation(fields: [apiSourceId], references: [id], onDelete: Cascade)
+}
+
+model ProcurementBid {
+  id              String    @id @default(cuid())
+  bidNoticeNo     String    @unique
+  bidNoticeName   String
+  orderingAgency  String?
+  demandAgency    String?
+  budgetAmount    Decimal?  @db.Decimal(18, 2)
+  baseAmount      Decimal?  @db.Decimal(18, 2)
+  bidStartAt      DateTime?
+  bidEndAt        DateTime?
+  openingAt       DateTime?
+  sourceUrl       String?
+  relatedKeywords String[]  @default([])
+  relevanceScore  Int?
+  status          String?
+  rawJson         Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ProcurementAward {
+  id                  String    @id @default(cuid())
+  bidNoticeNo         String
+  bidNoticeName       String?
+  winnerCompany       String?
+  winnerBusinessNo    String?
+  awardAmount         Decimal?  @db.Decimal(18, 2)
+  awardRate           Decimal?  @db.Decimal(8, 4)
+  orderingAgency      String?
+  demandAgency        String?
+  awardDate           DateTime?
+  relatedCompetitorId String?
+  rawJson             Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  relatedCompetitor Competitor? @relation(fields: [relatedCompetitorId], references: [id], onDelete: SetNull)
+}
+
+model ProcurementContract {
+  id                  String    @id @default(cuid())
+  contractNo          String    @unique
+  contractName        String
+  contractCompany     String?
+  contractBusinessNo  String?
+  contractAmount      Decimal?  @db.Decimal(18, 2)
+  contractDate        DateTime?
+  contractAgency      String?
+  demandAgency        String?
+  productOrServiceName String?
+  relatedCompetitorId String?
+  relatedKeywords     String[]  @default([])
+  rawJson             Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  relatedCompetitor Competitor? @relation(fields: [relatedCompetitorId], references: [id], onDelete: SetNull)
+}
+
+model MarketInstitution {
+  id                    String   @id @default(cuid())
+  institutionType       String
+  name                  String
+  regionSido            String?
+  regionSigungu         String?
+  address               String?
+  phone                 String?
+  homepageUrl           String?
+  studentCount          Int?
+  capacity              Int?
+  latitude              Decimal? @db.Decimal(10, 7)
+  longitude             Decimal? @db.Decimal(10, 7)
+  lucisCustomerStatus   String?
+  competitorUsageStatus String?
+  marketScore           Int?
+  rawJson               Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model IpRecord {
+  id               String    @id @default(cuid())
+  competitorId     String?
+  ipType           String
+  title            String
+  applicationNo    String?
+  registrationNo   String?
+  applicant        String?
+  applicationDate  DateTime?
+  registrationDate DateTime?
+  summary          String?   @db.Text
+  keywords         String[]  @default([])
+  sourceUrl        String?
+  rawJson          Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  competitor Competitor? @relation(fields: [competitorId], references: [id], onDelete: SetNull)
+}
+
+model MarketForecast {
+  id                      String   @id @default(cuid())
+  regionSido              String
+  regionSigungu           String?
+  targetType              String
+  institutionCount        Int?
+  estimatedStudents       Int?
+  estimatedChildren       Int?
+  estimatedSignupRate     Decimal? @db.Decimal(5, 4)
+  estimatedMonthlyRevenue Decimal? @db.Decimal(18, 2)
+  estimatedAnnualRevenue  Decimal? @db.Decimal(18, 2)
+  scenarioName            String
+  rawJson                 Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
