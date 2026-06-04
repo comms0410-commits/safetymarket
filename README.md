@@ -188,3 +188,50 @@ http://localhost:3000
 - 3단계: `/ask` OpenAI Responses API 기반 시장질문 검색, ResearchQuestion 저장, 질문 이력 관리
 - 4단계: 일일 리포트 생성, Word 다운로드, 대시보드 차트 고도화
 - 5단계: 공공 API Connector placeholder 실제 연결, 조달·학교·어린이집·통계·특허·공시 데이터 확장
+
+## Netlify 배포 설정
+
+Netlify에서도 동일한 Next.js 웹 서비스로 실행됩니다. 이번 프로젝트는 서버 컴포넌트와 NextAuth, Prisma를 사용하므로 **외부 PostgreSQL 데이터베이스**가 필요합니다.
+
+### Netlify Build settings
+
+`netlify.toml`에 아래 설정을 포함했습니다.
+
+- Build command: `npm run build`
+- Publish directory: `.next`
+- Node version: `20`
+- Next.js Runtime: `@netlify/plugin-nextjs`
+
+### Netlify 환경변수
+
+Netlify Site settings → Environment variables에 최소한 아래 값을 설정하세요.
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:PORT/DB?schema=public
+NEXTAUTH_SECRET=충분히-긴-랜덤-문자열
+NEXTAUTH_URL=https://배포된-netlify-도메인
+OPENAI_API_KEY=
+```
+
+공공 API 키는 현재 미연동 상태이므로 비워둘 수 있습니다.
+
+```env
+DATA_GO_KR_SERVICE_KEY=
+NEIS_API_KEY=
+CHILDCARE_API_KEY=
+KOSIS_API_KEY=
+KIPRIS_API_KEY=
+NTS_BUSINESS_API_KEY=
+OPENDART_API_KEY=
+```
+
+### Netlify 배포 전 DB 준비
+
+Netlify 빌드는 애플리케이션을 빌드만 하며, 운영 DB migration/seed는 별도로 실행하는 것을 권장합니다.
+
+```bash
+npm run prisma:migrate -- --name init
+npm run prisma:seed
+```
+
+운영 DB에 직접 접속 가능한 환경에서 위 명령을 한 번 실행하면 기본 관리자 계정과 샘플 대시보드 데이터가 들어갑니다.

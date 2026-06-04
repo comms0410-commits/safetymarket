@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function SourcesPage() {
   const sources = await prisma.monitoredSource.findMany({ include: { competitor: true }, orderBy: { updatedAt: "desc" }, take: 40 });
   return (

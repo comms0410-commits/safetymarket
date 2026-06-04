@@ -2,6 +2,8 @@ import { Bot, Send } from "lucide-react";
 import { AppShell } from "@/components/common/app-shell";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default function AskPage() {
   return (
     <AppShell>

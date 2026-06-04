@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = "force-dynamic";
+
 const labels = { ACTIVE: "활성", HOLD: "보류", WATCH: "관심", EXCLUDED: "제외", HIGH: "높음", MEDIUM: "보통", LOW: "낮음" } as const;
 
 export default async function CompetitorsPage() {

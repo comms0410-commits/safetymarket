@@ -4,23 +4,35 @@ import {
   CompetitorStatus,
   ImpactType,
   InsightStatus,
+  InterestLevel,
   PrismaClient,
   SourceType,
+  ThreatLevel,
   UserRole,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const competitors = [
-  { name: "JT통신", serviceName: "아이알리미", competitorType: "직접 경쟁", marketArea: "등하교 알림, 학교안전", keywords: ["JT통신", "아이알리미", "등하교 알림"], threatLevel: "HIGH", interestLevel: "HIGH", strengths: "초등 등하교 알림 시장 인지도", weaknesses: "세부 기능과 지역별 도입 현황 추가 확인 필요" },
-  { name: "SH네트웍스", serviceName: "키즈콜", competitorType: "직접 경쟁", marketArea: "등하교 알림, 전자출결", keywords: ["SH네트웍스", "키즈콜", "출결"], threatLevel: "HIGH", interestLevel: "HIGH" },
-  { name: "기창큐브", serviceName: "스쿨맘톡", competitorType: "플랫폼 경쟁", marketArea: "학교소통, 알림장", keywords: ["기창큐브", "스쿨맘톡", "학교소통"], threatLevel: "MEDIUM", interestLevel: "HIGH" },
-  { name: "웰티즌", serviceName: "웰티즌스쿨, 노란버스, 엑스맨", competitorType: "확장 경쟁", marketArea: "통학차량, 학교안전, 학원", keywords: ["웰티즌", "웰티즌스쿨", "노란버스", "엑스맨"], threatLevel: "HIGH", interestLevel: "HIGH" },
-  { name: "이웃닷컴", serviceName: "e알리미", competitorType: "플랫폼 경쟁", marketArea: "학교소통, 공지, 알림", keywords: ["이웃닷컴", "e알리미", "학교 공지"], threatLevel: "MEDIUM", interestLevel: "HIGH" },
-  { name: "엔트랙", serviceName: "엔트랙", competitorType: "확장 경쟁", marketArea: "등하교 알림, 위치 확인", keywords: ["엔트랙", "위치 확인", "등하교"], threatLevel: "MEDIUM", interestLevel: "MEDIUM" },
-  { name: "세이프어드바이저", serviceName: "교원안심번호", competitorType: "확장 경쟁", marketArea: "교원안심번호, 학교 안전", keywords: ["세이프어드바이저", "교원안심번호"], threatLevel: "MEDIUM", interestLevel: "MEDIUM" },
-] as const;
+const competitors: Array<{
+  name: string;
+  serviceName: string;
+  competitorType: string;
+  marketArea: string;
+  keywords: string[];
+  threatLevel: ThreatLevel;
+  interestLevel: InterestLevel;
+  strengths?: string;
+  weaknesses?: string;
+}> = [
+  { name: "JT통신", serviceName: "아이알리미", competitorType: "직접 경쟁", marketArea: "등하교 알림, 학교안전", keywords: ["JT통신", "아이알리미", "등하교 알림"], threatLevel: ThreatLevel.HIGH, interestLevel: InterestLevel.HIGH, strengths: "초등 등하교 알림 시장 인지도", weaknesses: "세부 기능과 지역별 도입 현황 추가 확인 필요" },
+  { name: "SH네트웍스", serviceName: "키즈콜", competitorType: "직접 경쟁", marketArea: "등하교 알림, 전자출결", keywords: ["SH네트웍스", "키즈콜", "출결"], threatLevel: ThreatLevel.HIGH, interestLevel: InterestLevel.HIGH },
+  { name: "기창큐브", serviceName: "스쿨맘톡", competitorType: "플랫폼 경쟁", marketArea: "학교소통, 알림장", keywords: ["기창큐브", "스쿨맘톡", "학교소통"], threatLevel: ThreatLevel.MEDIUM, interestLevel: InterestLevel.HIGH },
+  { name: "웰티즌", serviceName: "웰티즌스쿨, 노란버스, 엑스맨", competitorType: "확장 경쟁", marketArea: "통학차량, 학교안전, 학원", keywords: ["웰티즌", "웰티즌스쿨", "노란버스", "엑스맨"], threatLevel: ThreatLevel.HIGH, interestLevel: InterestLevel.HIGH },
+  { name: "이웃닷컴", serviceName: "e알리미", competitorType: "플랫폼 경쟁", marketArea: "학교소통, 공지, 알림", keywords: ["이웃닷컴", "e알리미", "학교 공지"], threatLevel: ThreatLevel.MEDIUM, interestLevel: InterestLevel.HIGH },
+  { name: "엔트랙", serviceName: "엔트랙", competitorType: "확장 경쟁", marketArea: "등하교 알림, 위치 확인", keywords: ["엔트랙", "위치 확인", "등하교"], threatLevel: ThreatLevel.MEDIUM, interestLevel: InterestLevel.MEDIUM },
+  { name: "세이프어드바이저", serviceName: "교원안심번호", competitorType: "확장 경쟁", marketArea: "교원안심번호, 학교 안전", keywords: ["세이프어드바이저", "교원안심번호"], threatLevel: ThreatLevel.MEDIUM, interestLevel: InterestLevel.MEDIUM },
+];
 
 const channelSeeds = [
   { type: SourceType.NEWS_SEARCH, name: "뉴스·보도자료 검색", suffix: "news" },

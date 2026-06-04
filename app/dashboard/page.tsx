@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db/prisma";
 
+export const dynamic = "force-dynamic";
+
 const impactLabels = { OPPORTUNITY: "기회", THREAT: "위협", NEUTRAL: "중립", NEEDS_CHECK: "확인필요" } as const;
 
 const channelDefinitions = [
