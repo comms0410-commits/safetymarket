@@ -61,6 +61,11 @@ http://localhost:3000
 npm run build
 ```
 
+## 보안 패치 기준
+
+CVE-2025-55182 / React Server Components 관련 Netlify 차단을 피하기 위해 `next`, `react`, `react-dom`은 npm latest 기준 패치 버전으로 올려두었습니다. Lockfile도 함께 커밋합니다.
+
+
 ## Netlify 배포 설정
 
 프로젝트 루트의 `netlify.toml`에 Netlify 설정이 들어 있습니다.
