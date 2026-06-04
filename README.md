@@ -92,6 +92,35 @@ Netlify UI에서도 아래와 같이 맞춰주세요.
 
 초기 MVP는 환경변수가 없어도 빌드/실행됩니다. `.env.example`은 후속 연동을 위한 placeholder만 포함합니다.
 
+
+## 매일 오전 9시 자동 분석
+
+Netlify Scheduled Function `netlify/functions/daily-market-watch.ts`가 매일 한국시간 오전 9시(UTC 00:00)에 실행됩니다.
+
+자동 실행 흐름:
+
+1. `lib/sample-data.ts`의 기본 경쟁사 목록을 기준으로 검색 키워드 생성
+2. 네이버 뉴스 API 키가 있으면 네이버 뉴스 검색 사용
+3. 네이버 키가 없으면 Google News RSS 수집 시도
+4. 수집 실패 시 mock fallback으로 실행 결과 생성
+5. `OPENAI_API_KEY`가 있으면 OpenAI Responses API로 요약/중요도/기회·위협/대응방안 분석
+6. 결과를 Netlify Blobs에 `market-watch/latest.json` 및 일자별 run 파일로 저장
+7. `/dashboard`, `/reports/daily`, `/api/market-watch/latest`에서 최신 저장 결과 조회
+
+빌드 시에는 `OPENAI_API_KEY`가 없어도 실패하지 않습니다.
+
+수동 실행 API:
+
+```bash
+curl -X POST "https://YOUR_SITE.netlify.app/api/market-watch/run?secret=MARKET_WATCH_RUN_SECRET"
+```
+
+최신 결과 조회 API:
+
+```bash
+curl "https://YOUR_SITE.netlify.app/api/market-watch/latest"
+```
+
 ## 후속 단계 예정
 
 1. 실제 로그인/권한 관리 도입

@@ -19,9 +19,11 @@ import { AppShell } from "@/components/common/app-shell";
 import { IssueTrendChart, type IssueTrendPoint } from "@/components/dashboard/issue-trend-chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { collectedItems, competitors, insights, publicApiSources } from "@/lib/sample-data";
+import { collectedItems, competitors, insights as sampleInsights, publicApiSources } from "@/lib/sample-data";
+import { getLatestMarketWatchRun } from "@/lib/market-watch/blob-store";
+import { runToCollectedItems, runToInsights, runToPublicApiStatus } from "@/lib/market-watch/dashboard-adapter";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 const impactLabels = { OPPORTUNITY: "기회", THREAT: "위협", NEUTRAL: "중립", NEEDS_CHECK: "확인필요" } as const;
 
@@ -40,20 +42,25 @@ const channelDefinitions = [
   { title: "신규 경쟁사 후보", icon: FileSearch, hint: "새로운 사업자 후보", matcher: ["신규", "후보"] },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const latestRun = await getLatestMarketWatchRun();
   const today = startOfDay(new Date());
   const sevenDaysAgo = startOfDay(addDays(new Date(), -6));
 
-  const collectedToday = collectedItems.filter((item) => item.collectedAt >= today).length;
-  const importantToday = insights.filter((insight) => insight.importanceScore >= 4 && insight.createdAt >= today).length;
-  const reviewNeeded = insights.filter((insight) => insight.status === "NEEDS_REVIEW").length;
-  const apiSources = publicApiSources.slice(0, 6);
+  const activeInsights = latestRun ? runToInsights(latestRun) : sampleInsights;
+  const activeCollectedItems = latestRun ? runToCollectedItems(latestRun) : collectedItems;
+  const activeApiSources = latestRun ? [...runToPublicApiStatus(latestRun), ...publicApiSources].slice(0, 6) : publicApiSources.slice(0, 6);
+
+  const collectedToday = activeCollectedItems.filter((item) => item.collectedAt >= today).length;
+  const importantToday = activeInsights.filter((insight) => insight.importanceScore >= 4 && insight.createdAt >= today).length;
+  const reviewNeeded = activeInsights.filter((insight) => insight.status === "NEEDS_REVIEW").length;
+  const apiSources = activeApiSources;
   const topCompetitors = competitors.slice(0, 7);
-  const topInsights = [...insights].sort((a, b) => b.importanceScore - a.importanceScore).slice(0, 5);
-  const recentItems = [...collectedItems].sort((a, b) => b.collectedAt.getTime() - a.collectedAt.getTime()).slice(0, 12);
-  const trendItems = collectedItems.filter((item) => item.collectedAt >= sevenDaysAgo).map((item) => ({
+  const topInsights = [...activeInsights].sort((a, b) => b.importanceScore - a.importanceScore).slice(0, 5);
+  const recentItems = [...activeCollectedItems].sort((a, b) => b.collectedAt.getTime() - a.collectedAt.getTime()).slice(0, 12);
+  const trendItems = activeCollectedItems.filter((item) => item.collectedAt >= sevenDaysAgo).map((item) => ({
     ...item,
-    insights: insights.filter((insight) => insight.collectedItemId === item.id),
+    insights: activeInsights.filter((insight) => insight.collectedItemId === item.id),
   }));
 
   const apiReady = apiSources.filter((source) => source.status === "NORMAL" || source.status === "TESTABLE").length;
@@ -73,6 +80,7 @@ export default function DashboardPage() {
               <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
                 경쟁사 활동, 학교 안내문, 앱 변화, 정책·입찰 흐름을 한 화면에서 확인하고 임원 보고용 리포트로 연결할 수 있는 내부 모니터링 화면입니다.
               </p>
+              {latestRun && <p className="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-sm text-blue-100">자동 분석 반영: {latestRun.generatedAtKst} · {latestRun.summary}</p>}
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button href="/competitors/new">경쟁사 추가</Button>
                 <Button href="/ask" variant="secondary">AI에게 질문하기</Button>
@@ -160,7 +168,7 @@ export default function DashboardPage() {
             {channelDefinitions.map((channel, index) => {
               const Icon = channel.icon;
               const matched = recentItems.filter((item) => channel.matcher.some((keyword) => `${item.title} ${item.originalText ?? ""}`.includes(keyword)));
-              const important = insights.filter((issue) => channel.matcher.some((keyword) => `${issue.category} ${issue.summary}`.includes(keyword))).length;
+              const important = activeInsights.filter((issue) => channel.matcher.some((keyword) => `${issue.category} ${issue.summary}`.includes(keyword))).length;
               return (
                 <div key={channel.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start gap-3">

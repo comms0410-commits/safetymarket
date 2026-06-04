@@ -15,7 +15,8 @@
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "recharts": "2.15.3",
-    "tailwind-merge": "2.6.0"
+    "tailwind-merge": "2.6.0",
+    "@netlify/blobs": "10.7.9"
   },
   "devDependencies": {
     "@types/node": "22.15.29",
@@ -28,6 +29,6 @@
     "typescript": "5.8.3"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=20.9.0"
   }
 }
