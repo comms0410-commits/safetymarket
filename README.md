@@ -235,3 +235,16 @@ npm run prisma:seed
 ```
 
 운영 DB에 직접 접속 가능한 환경에서 위 명령을 한 번 실행하면 기본 관리자 계정과 샘플 대시보드 데이터가 들어갑니다.
+
+### Netlify publish directory 오류 해결
+
+Netlify 로그에 아래처럼 표시되면 UI 설정이 저장소 설정을 읽지 못하고 루트 디렉터리를 publish directory로 사용한 상태입니다.
+
+```text
+No config file was defined
+publish: /opt/build/repo
+publishOrigin: ui
+Error: Your publish directory is pointing to the base directory of your site.
+```
+
+해결 방법은 `NETLIFY_DEPLOY.md`의 체크리스트를 따르고, Netlify UI에서 Publish directory를 반드시 `.next`로 바꾸는 것입니다. 정상 배포 로그에서는 `publish: /opt/build/repo/.next`가 보여야 합니다.

@@ -1,10 +1,23 @@
+# Netlify must read this file from the repository root.
+# If the Netlify UI shows publishOrigin: ui or "No config file was defined",
+# clear the UI build settings or set Publish directory to `.next` manually.
+
 [build]
+  base = "."
   command = "npm run build"
   publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
+
+[context.production]
+  command = "npm run build"
+  publish = ".next"
+
+[context.deploy-preview]
+  command = "npm run build"
+  publish = ".next"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
